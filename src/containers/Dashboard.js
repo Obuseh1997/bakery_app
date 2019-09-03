@@ -2,8 +2,8 @@ import React, { Component } from 'react';
 import axios from "axios";
 import {Button, Card, CardGroup, FormGroup, FormControl, FormLabel, Table } from "react-bootstrap";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import {  Router, Route, Switch, Redirect } from "react-router-dom";
 import {   Alert, Input, Modal , ModalHeader, ModalBody, ModalFooter, Breadcrumb, BreadcrumbItem} from 'reactstrap';
+import validator from 'validator';
 
 
 
@@ -33,7 +33,13 @@ export default class Dashboard extends Component {
           reason: '',
           visible: false,
           message: '',
-          color: ''
+          color: '',
+          errors: {
+            email: null,
+            first_name: null,
+            amount: null,
+            reason: null
+          }
         }
         this.handleChange = this.handleChange.bind(this);
         this.handleChangeCode = this.handleChangeCode.bind(this);
@@ -116,9 +122,75 @@ export default class Dashboard extends Component {
     }
 
     handleChange = event => {
+      // function handleChange(e){
+      //   const {name, value} = http://e.target;
+      
+      //   this.setState({[name]: value})
+      
+      //   switch(name){
+      //     case "email":
+      //       if(!validator.isEmail(value)){
+      //         this.setState({errors: {...this.state.errors, email: "Please enter a valid email"}})
+      //       } else{
+      //         // Clear the email error if the email is valid
+      //         this.setState({errors: {...this.state.errors, email: null}})
+      //       }
+      //     case "first_name":
+      //       if(!value){
+      //         // Set the error indicating that the first name is missing
+      //       }
+      //     default:
+      //       return;
+      //   }
+      // }
+      const {id, value} = event.target;
         this.setState({
-            [event.target.id]: event.target.value
+            [id]: value
         });
+        switch(id){
+          case "job":
+            if(!validator.isEmail(value)){
+              this.setState({
+                errors: {...this.state.errors, email:
+                'Please enter a valid email'}
+              })
+            }
+            else{
+              this.setState({
+                errors: {...this.state.errors, email: null}
+              })
+            }
+            break;
+          case "name":
+            if(!value){
+              this.setState({
+                errors: {...this.state.errors, first_name:
+                'Name is missing'}
+              })
+            }
+            else{
+              this.setState({
+                errors: {...this.state.errors, first_name: null}
+              })
+            }
+            break;
+            case "account_no":
+                if(!validator.isNumeric(value)){
+                  this.setState({
+                    errors: {...this.state.errors, amount:
+                    'Please type in a correct Account Number'}
+                  })
+                }
+                else{
+                  this.setState({
+                    errors: {...this.state.errors, amount: null}
+                  })
+                }
+                break;
+          default:
+           return;
+            
+        }
     }
     
     onDismiss() {
@@ -147,7 +219,7 @@ export default class Dashboard extends Component {
               this.setState(prevState => ({
                 mode: !prevState.mode,
                 visible: true,
-                message: res.message,
+                message: this.state.amount + 'has been successfully transferred. Please refresh page to view changes',
                 color: 'info'
               }))
           }
@@ -157,7 +229,7 @@ export default class Dashboard extends Component {
           this.setState(prevState => ({
             mode: !prevState.mode,
             visible: true,
-            message: err.message,
+            message: "BAD REQUEST. PLEASE TRY AGAIN",
             color: 'warning'
           }))
       })
@@ -166,6 +238,7 @@ export default class Dashboard extends Component {
     createRecipient = event => { 
         event.preventDefault();
         console.log(this.state.name, this.state.bank_code, this.state.description, this.state.account_no, this.state.job, this.state.address)
+        if (this.state.errors.name == null && this.state.errors.email == null & this.state.errors.amount == null ) {
         axios({
             method: "post",
             url: "https://api.paystack.co/transferrecipient",
@@ -209,6 +282,10 @@ export default class Dashboard extends Component {
                 }))
             }
         )
+          }
+        else {
+          alert("Please fill in the required fields correctly");
+        }
     }
 
     deleteRecipient(crtId) {
@@ -253,6 +330,7 @@ export default class Dashboard extends Component {
     
 handleChangeCode = ({ target }) =>{
     this.setState({ [target.name]: target.value });
+
     
   }
     toggleModal() {
@@ -370,6 +448,7 @@ handleChangeCode = ({ target }) =>{
                     onChange={this.handleChange}
                     />
                     </FormGroup>
+                    <p style={{'color': 'red'}}>{this.state.errors.first_name}</p>
                     <FormGroup controlId="description">
                         <FormLabel>Description</FormLabel>
                         <FormControl
@@ -398,6 +477,7 @@ handleChangeCode = ({ target }) =>{
                         type="name"
                         />
                     </FormGroup>
+                    <p style={{'color': 'red'}}>{this.state.errors.amount}</p>
                     <FormGroup controlId="job">
                         <FormLabel>E-mail</FormLabel>
                         <FormControl
@@ -406,6 +486,7 @@ handleChangeCode = ({ target }) =>{
                         type="e-mail"
                         />
                     </FormGroup>
+                    <p style={{'color': 'red'}}>{this.state.errors.email}</p>
                     <FormGroup controlId="address">
                         <FormLabel>Address Details</FormLabel>
                         <FormControl
