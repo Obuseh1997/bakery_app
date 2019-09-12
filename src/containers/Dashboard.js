@@ -5,7 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import {   Alert, Input, Modal , ModalHeader, ModalBody, ModalFooter, Breadcrumb, BreadcrumbItem} from 'reactstrap';
 import validator from 'validator';
 
-
+ 
 
 let data4 = [];
 let data3 = [];
@@ -39,7 +39,9 @@ export default class Dashboard extends Component {
             first_name: null,
             amount: null,
             reason: null
-          }
+          },
+          status1: 'fail',
+          status2: 'fail'
         }
         this.handleChange = this.handleChange.bind(this);
         this.handleChangeCode = this.handleChangeCode.bind(this);
@@ -119,6 +121,50 @@ export default class Dashboard extends Component {
               .catch(err => {
                   console.log(err);
               })
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+      if (this.state.status1 !== prevState.status1) {
+        axios({
+          method: 'get',
+          url: 'https://api.paystack.co/transferrecipient',
+          headers: {"Authorization": "Bearer sk_test_cf0b6c9b594ac046346e8cb39ec4bb824c7c726e"}
+        })
+        .then(
+            res => {
+             this.setState({
+               recipient_api: res.data.data
+             })
+             data2  = res.data.data
+             console.log(data2)
+            }
+        )
+        .catch(err => {
+            console.log(err);
+        })
+      }
+      if (this.state.status2 !== prevState.status2) {
+        axios({
+          method: 'get',
+          url: 'https://api.paystack.co/transfer',
+          headers: {"Authorization": "Bearer sk_test_cf0b6c9b594ac046346e8cb39ec4bb824c7c726e"}
+        })
+        .then(
+            res => {
+             this.setState({
+               transfer_api: res.data.data
+             })
+             data4  = res.data
+             data5 = data4.recipient
+             console.log(data4)
+             console.log(data5)
+            }
+        )
+        .catch(err => {
+            console.log(err);
+        })
+      }
+
     }
 
     handleChange = event => {
@@ -206,7 +252,7 @@ export default class Dashboard extends Component {
           url: "https://api.paystack.co/transfer",
           data: {
                source: "balance",
-               amount: this.state.amount,
+               amount: this.state.amount * 100,
                currency: 'NGN',
                reason: this.state.reason,
                recipient: this.state.bank_code
@@ -217,9 +263,10 @@ export default class Dashboard extends Component {
           res => {
               console.log(res.data);
               this.setState(prevState => ({
+                status2: 'success',
                 mode: !prevState.mode,
                 visible: true,
-                message: this.state.amount + 'has been successfully transferred. Please refresh page to view changes',
+                message: this.state.amount + ' has been successfully transferred.',
                 color: 'info'
               }))
           }
@@ -262,9 +309,10 @@ export default class Dashboard extends Component {
             res => {
                 console.log(res.data)
                 this.setState(prevState => ({
+                    status1: 'success',
                     modal: !prevState.modal,
                     visible: true,
-                    message: "Recipient Created Succesfully. Please Refresh Page",
+                    message: "Recipient Created Succesfully",
                     color: 'info'
                   }))
 
@@ -386,7 +434,7 @@ handleChangeCode = ({ target }) =>{
 <Breadcrumb>
         <BreadcrumbItem active>Suppliers List</BreadcrumbItem>
 </Breadcrumb>
-<table className="table table-striped">
+<table className="table table-bordered">
   <thead className="thead-dark">
     <tr>
       <th>Supplier Code</th>
@@ -401,7 +449,7 @@ handleChangeCode = ({ target }) =>{
            <tr key={data.recipient_code}>
               <td>{data.recipient_code}</td>
               <td>{data.name}</td>
-             <td><button className="btn btn-danger" onClick={e => this.Deletecipient(data.recipient_code)}>Delete</button></td> 
+             <td><button className="btn btn-danger" onClick={e => this.deleteRecipient(data.recipient_code)}>Delete</button></td> 
            </tr>
          )})
        }
@@ -411,10 +459,9 @@ handleChangeCode = ({ target }) =>{
 <Breadcrumb>
         <BreadcrumbItem active>Transactions List</BreadcrumbItem>
       </Breadcrumb>
-<table className="table table-striped">
+<table className="table  table-bordered">
   <thead className="thead-dark">
     <tr>
-    <th>Transfer Code</th>
     <th>Amount</th>
       <th>Reason</th>
       <th>Status of Transfer</th>
@@ -425,7 +472,6 @@ handleChangeCode = ({ target }) =>{
          this.state.transfer_api.map(data => {
       return (
            <tr key={data.transfer_code}>
-               <td>{data.transfer_code}</td>
                <td>{data.amount}</td>
               <td>{data.reason}</td>
               <td>{data.status}</td>
@@ -460,6 +506,7 @@ handleChangeCode = ({ target }) =>{
                     <FormGroup controlId="bank_code" >
                         <FormLabel>Bank of Recipient</FormLabel>
                         <Input type="select"  name="bank_code"  onChange={this.handleChangeCode}>
+                          <option value='select bank'>Select Bank</option>
                         {
                        this.state.bank_api.map(data => {
                     return (
@@ -511,6 +558,7 @@ handleChangeCode = ({ target }) =>{
                     <FormGroup controlId="source" >
                         <FormLabel>Recipient</FormLabel>
                         <Input type="select"  name="bank_code"  onChange={this.handleChangeCode}>
+                        <option  value="recipient">Select Recipient</option>
                         {
                        this.state.recipient_api.map(data => {
                     return (
@@ -527,7 +575,7 @@ handleChangeCode = ({ target }) =>{
                         </Input>
                     </FormGroup>
                     <FormGroup controlId="amount">
-                        <FormLabel>Amount to be Transferred (kobo)</FormLabel>
+                        <FormLabel>Amount to be Transferred</FormLabel>
                         <FormControl
                         value={this.state.amount}
                         onChange={this.handleChange}
